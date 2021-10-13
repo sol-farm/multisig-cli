@@ -19,3 +19,7 @@ spl-token = "3.2.0"
 solana-remote-wallet = "1.7.11"
 solana-clap-utils = "1.7.11"
 serum-multisig = {git = "https://github.com/project-serum/multisig.git", rev = "9200c42ef388b1d266a9a4b0032554bc341a1fa2"}
+rand = "0.7.3"
+anchor-client = "0.14.0"
+shellexpand = "2.1.0"
+dirs = "4.0.0"

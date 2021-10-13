@@ -5,6 +5,7 @@ use tokio;
 use clap::{App, Arg, SubCommand};
 mod config;
 mod multisig;
+mod request_builder;
 #[tokio::main]
 async fn main() -> Result<()> {
     let matches = App::new("template-cli")
@@ -24,7 +25,7 @@ async fn main() -> Result<()> {
         .short("k")
         .long("keypair")
         .value_name("KEYPAIR")
-        .help("specifies the keypair to use for signing transactions, overrides the value from the config file")
+        .help("specifies the keypair to use for signing transactions")
         .required(false)
     )
     .subcommand(
@@ -59,7 +60,30 @@ async fn main() -> Result<()> {
                 .help("specifies the minimum required signers")
                 .takes_value(true)
                 .value_name("COUNT")
+            ).arg(
+                Arg::with_name("name")
+                .short("n")
+                .long("name")
+                .help("used to name the multisig account in the config file")
+                .takes_value(true)
             ),  
+            SubCommand::with_name("create")
+            .about("create a new multisig account, requires that a config currently exists")
+            .arg(
+                Arg::with_name("name")
+                .short("n")
+                .long("name")
+                .help("the name of the multisig account were creating")
+                .takes_value(true)
+            )
+            .arg(
+                Arg::with_name("keypair")
+                .short("k")
+                .long("keypair")
+                .value_name("KEYPAIR")
+                .help("specifies the keypair to use for signing transactions")
+                .required(false)
+            )
         ])
     )
     .get_matches();
@@ -87,8 +111,11 @@ async fn process_matches<'a>(matches: &clap::ArgMatches<'a>, config_file_path: S
         },
         ("multisig", Some(multisig_command)) => match multisig_command.subcommand() {
             ("new-config", Some(new_multisig)) => {
-                multisig::new_multisig_command(new_multisig, config_file_path)
+                multisig::new_multisig_config(new_multisig, config_file_path)
             },
+            ("create", Some(create_command)) => {
+                multisig::create_multisig(create_command, config_file_path)
+            }
             _ => invalid_subcommand("multisig")
         }
         _ => invalid_command(),
