@@ -13,6 +13,22 @@ pub struct Configuration {
     pub log_file: String,
     pub debug_log: bool,
     pub rpc_url: String,
+    pub multisig: MultiSignature,
+}
+
+/// multisignature related configurations
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct MultiSignature {
+    pub program_id: String,
+    pub accounts: Vec<MultiSigAccount>,
+}
+
+/// an instance of the multisignature account
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct MultiSigAccount {
+    pub account: String,
+    pub threshold: u64,
+    pub owners: Vec<String>,
 }
 
 
@@ -120,7 +136,11 @@ impl Default for Configuration {
             db_url: "postgres://postgres:necc@postgres/kek".to_string(),
             log_file: "template.log".to_string(),
             debug_log: false,
-            rpc_url: "https://solana-api.projectserum.com".to_string()
+            rpc_url: "https://solana-api.projectserum.com".to_string(),
+            multisig: MultiSignature{
+                program_id: "msigmtwzgXJHj2ext4XJjCDmpbcMuufFb5cHuwg6Xdt".to_string(),
+                accounts: vec![],
+            }
         }
     }
 }

@@ -4,7 +4,7 @@ use anyhow::{Result, anyhow};
 use tokio;
 use clap::{App, Arg, SubCommand};
 mod config;
-
+mod multisig;
 #[tokio::main]
 async fn main() -> Result<()> {
     let matches = App::new("template-cli")
@@ -19,6 +19,14 @@ async fn main() -> Result<()> {
             .help("sets the config file")
             .takes_value(true),
     )
+    .arg(
+        Arg::with_name("keypair")
+        .short("k")
+        .long("keypair")
+        .value_name("KEYPAIR")
+        .help("specifies the keypair to use for signing transactions, overrides the value from the config file")
+        .required(false)
+    )
     .subcommand(
         SubCommand::with_name("config")
         .about("configuration management commands")
@@ -30,6 +38,29 @@ async fn main() -> Result<()> {
                 .about("exports the yaml config file into a json file")
             ]
         )
+    )
+    .subcommand(
+        SubCommand::with_name("multisig")
+        .about("multisig management commands")
+        .subcommands(vec![
+            SubCommand::with_name("new-config")
+            .about("generates a new multisig config file with the given threshold, and owners")
+            .arg(
+                Arg::with_name("owners")
+                .short("o")
+                .long("owners")
+                .help("the owners to be added to the multisig")
+                .takes_value(true)
+            )
+            .arg(
+                Arg::with_name("threshold")
+                .short("t")
+                .long("threshold")
+                .help("specifies the minimum required signers")
+                .takes_value(true)
+                .value_name("COUNT")
+            ),  
+        ])
     )
     .get_matches();
     let config_file_path = get_config_or_default(&matches);
@@ -54,6 +85,12 @@ async fn process_matches<'a>(matches: &clap::ArgMatches<'a>, config_file_path: S
             }
             _ => invalid_subcommand("config"),
         },
+        ("multisig", Some(multisig_command)) => match multisig_command.subcommand() {
+            ("new-config", Some(new_multisig)) => {
+                multisig::new_multisig_command(new_multisig, config_file_path)
+            },
+            _ => invalid_subcommand("multisig")
+        }
         _ => invalid_command(),
     }
 }

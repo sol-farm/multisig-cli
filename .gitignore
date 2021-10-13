@@ -1,3 +1,8 @@
 target/
 ssh
 .ssh
+template-cli
+
+multisig-cli
+
+config.yaml
