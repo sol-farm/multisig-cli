@@ -1,0 +1,17 @@
+[package]
+name = "cli"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+config = {path = "../config" }
+clap = "2.33.3"
+signal-hook = "0.3.9"
+log = "0.4.14"
+jemallocator = "0.3.2"
+thiserror = "1.0.25"
+anyhow = "1.0.41"
+simplelog = "0.10.0"
+tokio = { version = "1.8.0", features = ["rt-multi-thread", "macros"] } 
