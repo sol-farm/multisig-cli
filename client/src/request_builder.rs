@@ -22,21 +22,24 @@ use anchor_client::Client;
 use anchor_client::ClientError;
 use anchor_client::Program;
 use anchor_client::RequestNamespace;
-
+use serum_multisig::TransactionAccount;
+use anyhow::Result;
+use rand::rngs::OsRng;
 /// `RequestBuilder` provides a builder interface to create and send
 /// transactions to a cluster.
 pub struct RequestBuilder<'a> {
-    cluster: String,
-    program_id: Pubkey,
-    accounts: Vec<AccountMeta>,
-    options: CommitmentConfig,
-    instructions: Vec<Instruction>,
-    payer: &'a dyn Signer,
+    pub cluster: String,
+    pub program_id: Pubkey,
+    pub accounts: Vec<AccountMeta>,
+    pub options: CommitmentConfig,
+    pub instructions: Vec<Instruction>,
+    pub payer: &'a dyn Signer,
     // Serialized instruction data for the target RPC.
-    instruction_data: Option<Vec<u8>>,
-    signers: Vec<&'a dyn Signer>,
+    pub instruction_data: Option<Vec<u8>>,
+    pub signers: Vec<&'a dyn Signer>,
     // True if the user is sending a state instruction.
-    namespace: RequestNamespace,
+    pub namespace: RequestNamespace,
+    pub rpc: RpcClient,
 }
 
 impl<'a> RequestBuilder<'a> {
@@ -57,6 +60,7 @@ impl<'a> RequestBuilder<'a> {
             instruction_data: None,
             signers: Vec::new(),
             namespace,
+            rpc: RpcClient::new(cluster.to_string()),
         }
     }
 
@@ -225,5 +229,43 @@ impl<'a> RequestBuilder<'a> {
         Ok(instructions)
     }
 
+    pub fn create_transaction(
+        &self,
+        builder: Option<RequestBuilder>,
+        multisig: Pubkey,
+        pid: Pubkey,
+        accs: Vec<TransactionAccount>,
+        data: Vec<u8>,
+    ) -> Result<Pubkey> {
+        let tx_acct = Keypair::generate(&mut OsRng);
+        let mut builder = self.request()
+            .instruction(system_instruction::create_account(
+                &&self.payer.pubkey(),
+                &tx_acct.pubkey(),
+                self.rpc
+                    .get_minimum_balance_for_rent_exemption(500)?,
+                500,
+                &self.program_id,
+            ))
+            .accounts(serum_multisig::accounts::CreateTransaction {
+                multisig,
+                transaction: tx_acct.pubkey(),
+                proposer: self.payer.pubkey(),
+                rent: sysvar::rent::ID,
+            })
+            .args(serum_multisig::instruction::CreateTransaction { pid, accs, data });
+
+        builder.signer(&tx_acct).send(true)?;
+        Ok(tx_acct.pubkey())
+    }
+    pub fn request(&self) -> RequestBuilder {
+        RequestBuilder::from(
+            self.program_id,
+            &self.cluster,
+            self.payer,
+            None,
+            RequestNamespace::Global,
+        )
+    }
     fn rpc_snd() {}
 }

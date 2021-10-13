@@ -12,7 +12,7 @@ use anchor_client::{RequestNamespace, solana_sdk::{
     system_instruction, sysvar,
 }};
 use solana_clap_utils::keypair::signer_from_path;
-use crate::request_builder;
+
 pub fn new_multisig_config(matches: &clap::ArgMatches, config_file_path: String) -> Result<()> {
     let mut config = Configuration::load(config_file_path.as_str(), false)?;
     let owners: String = matches.values_of("owners").unwrap().collect();
@@ -22,19 +22,21 @@ pub fn new_multisig_config(matches: &clap::ArgMatches, config_file_path: String)
         name: matches.value_of("name").unwrap().to_string(),
         account: "".to_string(), 
         threshold: u64::from_str(threshold).unwrap(),
+        pda: "".to_string(),
+        pda_nonce: 0,
         owners,
     });
     config.save(&config_file_path, false)?;
     Ok(())
 }
-pub fn create_multisig(matches: &clap::ArgMatches, config_file_path: String) -> Result<()> {
+pub fn create_multisig(matches: &clap::ArgMatches, config_file_path: String, keypair: String) -> Result<()> {
     let mut config = Configuration::load(config_file_path.as_str(), false)?;
     let multisig_idx = config.multisig.multisig_index(matches.value_of("name").unwrap().to_string()).unwrap();
     let multisig_config = config.multisig.by_name(matches.value_of("name").unwrap().to_string()).unwrap();
     let multisig_account = Keypair::generate(&mut OsRng);
     config.multisig.accounts[multisig_idx].account = multisig_account.pubkey().to_string();
     let mut wallet_manager = remote_wallet::maybe_wallet_manager().unwrap();
-    let signer = signer_from_path(matches, matches.value_of("keypair").unwrap(), matches.value_of("keypair").unwrap(), &mut wallet_manager);
+    let signer = signer_from_path(matches, &keypair, &keypair, &mut wallet_manager);
     if signer.is_err() {
         panic!("failed to get signer {:#?}", signer.err().unwrap());
     }
@@ -52,7 +54,10 @@ pub fn create_multisig(matches: &clap::ArgMatches, config_file_path: String) -> 
         )
     };
 
-    let builder = request_builder::RequestBuilder::from(
+    config.multisig.accounts[multisig_idx].pda = multisig_signer.to_string();
+    config.multisig.accounts[multisig_idx].pda_nonce = multisig_nonce;
+
+    let builder = client::request_builder::RequestBuilder::from(
         config.multisig.program_id(),
         config.rpc_url.as_str(),
         &*signer,
@@ -63,8 +68,8 @@ pub fn create_multisig(matches: &clap::ArgMatches, config_file_path: String) -> 
     .instruction(system_instruction::create_account(
         &signer.pubkey(),
         &multisig_account.pubkey(),
-        program.rpc().get_minimum_balance_for_rent_exemption(500).unwrap(),
-        500 as u64,
+        program.rpc().get_minimum_balance_for_rent_exemption(1000).unwrap(),
+        1000 as u64,
         &config.multisig.program_id(),
     ))
     .args(serum_multisig::instruction::CreateMultisig{
@@ -84,5 +89,31 @@ pub fn create_multisig(matches: &clap::ArgMatches, config_file_path: String) -> 
     }
     println!("sent tx {}", sig.unwrap());
     config.save(config_file_path.as_str(),false)?;
+    Ok(())
+}
+
+pub fn transfer_tokens(matches: &clap::ArgMatches, config_file_path: String, keypair: String) -> Result<()> {
+    let config = Configuration::load(config_file_path.as_str(), false)?;   
+    let mut wallet_manager = remote_wallet::maybe_wallet_manager().unwrap();
+    let signer = signer_from_path(matches, &keypair, &keypair, &mut wallet_manager);
+    if signer.is_err() {
+        panic!("failed to get signer {:#?}", signer.err().unwrap());
+    }
+    let multisig_name = matches.value_of("name").unwrap();
+    let multisig_config = config.multisig.by_name(multisig_name.to_string()).unwrap();
+    let source = Pubkey::from_str(matches.value_of("source").unwrap()).unwrap();
+    let target = Pubkey::from_str(matches.value_of("target").unwrap()).unwrap();
+    let amount = f64::from_str(matches.value_of("amount").unwrap()).unwrap();
+    let decimals = u8::from_str(matches.value_of("decimals").unwrap()).unwrap();
+    let amount = spl_token::ui_amount_to_amount(amount, decimals);
+    let signer = signer.unwrap();
+    let builder = client::request_builder::RequestBuilder::from(
+        config.multisig.program_id(),
+        config.rpc_url.as_str(),
+        &*signer,
+        None,
+        RequestNamespace::Global,
+    );
+    builder.propose_transfer_tokens(multisig_config.account(), source, target, amount)?;
     Ok(())
 }

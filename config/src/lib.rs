@@ -34,8 +34,16 @@ pub struct MultiSignature {
 pub struct MultiSigAccount {
     pub name: String,
     pub account: String,
+    pub pda: String,
+    pub pda_nonce: u8,
     pub threshold: u64,
     pub owners: Vec<String>,
+}
+
+impl MultiSigAccount {
+    pub fn account(&self) -> Pubkey {
+        Pubkey::from_str(self.account.as_str()).unwrap()
+    }
 }
 
 impl MultiSignature {

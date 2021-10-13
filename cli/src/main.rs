@@ -5,7 +5,7 @@ use tokio;
 use clap::{App, Arg, SubCommand};
 mod config;
 mod multisig;
-mod request_builder;
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let matches = App::new("template-cli")
@@ -75,20 +75,54 @@ async fn main() -> Result<()> {
                 .long("name")
                 .help("the name of the multisig account were creating")
                 .takes_value(true)
+            ),
+            SubCommand::with_name("transfer-tokens")
+            .about("submit a token transfer tx to the multisig")
+            .arg(
+                Arg::with_name("name")
+                .short("n")
+                .long("name")
+                .help("the name of the multisig we are submitting to")
+                .takes_value(true)
             )
             .arg(
-                Arg::with_name("keypair")
-                .short("k")
-                .long("keypair")
-                .value_name("KEYPAIR")
-                .help("specifies the keypair to use for signing transactions")
-                .required(false)
+                Arg::with_name("source")
+                .short("s")
+                .long("source")
+                .help("the source token account to transfer from")
+                .takes_value(true)
+                .value_name("ADDRESS")
             )
+            .arg(
+                Arg::with_name("target")
+                .short("t")
+                .long("target")
+                .help("the target to transfer tokens to")
+                .takes_value(true)
+                .value_name("ADDRESS")
+            )
+            .arg(
+                Arg::with_name("amount")
+                .short("a")
+                .long("amount")
+                .help("the amount of tokens to send, denominated in 'ui amount'")
+                .takes_value(true)
+                .value_name("AMOUNT")
+            )
+            .arg(
+                Arg::with_name("decimals")
+                .short("d")
+                .long("decimals")
+                .help("the number of decimals in the token, used for converting ui amounts to token amounts")
+                .takes_value(true)
+                .value_name("DECIMALS")
+            ),
         ])
     )
     .get_matches();
     let config_file_path = get_config_or_default(&matches);
-    process_matches(&matches, config_file_path).await?;
+    let keypair = get_keypair_or_default(&matches);
+    process_matches(&matches, config_file_path, keypair).await?;
     Ok(())
 }
 
@@ -100,7 +134,13 @@ fn get_config_or_default(matches: &clap::ArgMatches) -> String {
         .to_string()
 }
 
-async fn process_matches<'a>(matches: &clap::ArgMatches<'a>, config_file_path: String) -> Result<()> {
+fn get_keypair_or_default(matches: &clap::ArgMatches) -> String {
+    matches.value_of("keypair")
+    .unwrap_or("usb://ledger")
+    .to_string()
+}
+
+async fn process_matches<'a>(matches: &clap::ArgMatches<'a>, config_file_path: String, keypair: String) -> Result<()> {
     match matches.subcommand() {
         ("config", Some(config_command)) => match config_command.subcommand() {
             ("new", Some(new_config)) => config::new_config(new_config, config_file_path),
@@ -114,7 +154,10 @@ async fn process_matches<'a>(matches: &clap::ArgMatches<'a>, config_file_path: S
                 multisig::new_multisig_config(new_multisig, config_file_path)
             },
             ("create", Some(create_command)) => {
-                multisig::create_multisig(create_command, config_file_path)
+                multisig::create_multisig(create_command, config_file_path, keypair)
+            }
+            ("transfer-tokens", Some(transfer_tokens)) => {
+                multisig::transfer_tokens(transfer_tokens, config_file_path, keypair)
             }
             _ => invalid_subcommand("multisig")
         }
