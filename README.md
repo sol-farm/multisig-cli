@@ -1,2 +1,3 @@
-# rust-template
-rust project starter template (cli + config file)
+# multisig-cli
+
+Used to manage multisig wallets deployed with [multisig](https://github.com/project-serum/multisig).
