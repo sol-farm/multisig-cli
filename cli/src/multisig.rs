@@ -114,6 +114,9 @@ pub fn transfer_tokens(matches: &clap::ArgMatches, config_file_path: String, key
         None,
         RequestNamespace::Global,
     );
-    builder.propose_transfer_tokens(multisig_config.account(), source, target, amount)?;
+    let res = builder.propose_transfer_tokens(multisig_config.account(), source, target, amount);
+    if res.is_err() {
+        panic!("failed to submit proposal {:#?}", res.err().unwrap());
+    }
     Ok(())
 }
