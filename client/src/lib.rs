@@ -30,17 +30,17 @@ impl<'a> RequestBuilder<'a> {
     pub fn propose_transfer_tokens(
         &self,
         multisig: Pubkey,
+        pda: Pubkey,
         source: Pubkey,
         target: Pubkey,
         amount: u64,
     ) -> Result<Pubkey> {
-        let signer = self.payer.pubkey();
         let ix = spl_token::instruction::transfer(
             &spl_token::id(),
             &source,
             &target,
-            &signer,
-            &vec![&signer],
+            &pda,
+            &vec![&pda],
             amount,
         )?;
         self.propose_solana_instruction(&multisig, ix)

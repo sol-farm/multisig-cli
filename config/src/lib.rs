@@ -44,6 +44,9 @@ impl MultiSigAccount {
     pub fn account(&self) -> Pubkey {
         Pubkey::from_str(self.account.as_str()).unwrap()
     }
+    pub fn pda(&self) -> Pubkey {
+        Pubkey::from_str(self.pda.as_str()).unwrap()
+    }
 }
 
 impl MultiSignature {

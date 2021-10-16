@@ -97,7 +97,7 @@ async fn main() -> Result<()> {
                 Arg::with_name("target")
                 .short("t")
                 .long("target")
-                .help("the target to transfer tokens to")
+                .help("the target to transfer tokens to, this must be a wallet address")
                 .takes_value(true)
                 .value_name("ADDRESS")
             )

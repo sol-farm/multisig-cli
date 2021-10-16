@@ -255,7 +255,8 @@ impl<'a> RequestBuilder<'a> {
             })
             .args(serum_multisig::instruction::CreateTransaction { pid, accs, data });
 
-        builder.signer(&tx_acct).send(true)?;
+        let sig = builder.signer(&tx_acct).send(true)?;
+        println!("sent tx {}", sig);
         Ok(tx_acct.pubkey())
     }
     pub fn request(&self) -> RequestBuilder {

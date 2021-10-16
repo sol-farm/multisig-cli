@@ -1,12 +1,12 @@
 use std::mem;
 use config::{Configuration, MultiSigAccount};
 use anyhow::Result;
-use serum_multisig::Multisig;
+use serum_multisig::{Multisig};
 use solana_remote_wallet::remote_wallet;
 use solana_clap_utils::keypair::DefaultSigner;
 use std::str::FromStr;
 use rand::rngs::OsRng;
-use anchor_client::{RequestNamespace, solana_sdk::{
+use anchor_client::{RequestNamespace, anchor_lang::AccountDeserialize, solana_client::rpc_client::RpcClient, solana_sdk::{
     pubkey::Pubkey,
     signature::{Keypair, Signer},
     system_instruction, sysvar,
@@ -56,6 +56,7 @@ pub fn create_multisig(matches: &clap::ArgMatches, config_file_path: String, key
 
     config.multisig.accounts[multisig_idx].pda = multisig_signer.to_string();
     config.multisig.accounts[multisig_idx].pda_nonce = multisig_nonce;
+    config.save(&config_file_path, false)?;
 
     let builder = client::request_builder::RequestBuilder::from(
         config.multisig.program_id(),
@@ -93,7 +94,7 @@ pub fn create_multisig(matches: &clap::ArgMatches, config_file_path: String, key
 }
 
 pub fn transfer_tokens(matches: &clap::ArgMatches, config_file_path: String, keypair: String) -> Result<()> {
-    let config = Configuration::load(config_file_path.as_str(), false)?;   
+    let config = Configuration::load(config_file_path.as_str(), false)?;
     let mut wallet_manager = remote_wallet::maybe_wallet_manager().unwrap();
     let signer = signer_from_path(matches, &keypair, &keypair, &mut wallet_manager);
     if signer.is_err() {
@@ -107,6 +108,7 @@ pub fn transfer_tokens(matches: &clap::ArgMatches, config_file_path: String, key
     let decimals = u8::from_str(matches.value_of("decimals").unwrap()).unwrap();
     let amount = spl_token::ui_amount_to_amount(amount, decimals);
     let signer = signer.unwrap();
+
     let builder = client::request_builder::RequestBuilder::from(
         config.multisig.program_id(),
         config.rpc_url.as_str(),
@@ -114,9 +116,16 @@ pub fn transfer_tokens(matches: &clap::ArgMatches, config_file_path: String, key
         None,
         RequestNamespace::Global,
     );
-    let res = builder.propose_transfer_tokens(multisig_config.account(), source, target, amount);
+    let res = builder.propose_transfer_tokens(
+        multisig_config.account(),
+        multisig_config.pda(),
+        source, 
+        target, 
+        amount);
     if res.is_err() {
         panic!("failed to submit proposal {:#?}", res.err().unwrap());
+    } else {
+        println!("sent proposal, account: {}", res.unwrap());
     }
     Ok(())
 }
