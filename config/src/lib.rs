@@ -38,6 +38,8 @@ pub struct MultiSigAccount {
     pub pda_nonce: u8,
     pub threshold: u64,
     pub owners: Vec<String>,
+    // (name, address)
+    pub token_accounts: Vec<(String, String)>,
 }
 
 impl MultiSigAccount {
