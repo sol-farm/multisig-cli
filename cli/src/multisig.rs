@@ -1,16 +1,12 @@
 use std::mem;
 use config::{Configuration, MultiSigAccount};
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use serum_multisig::{Multisig};
 use solana_remote_wallet::remote_wallet;
 use solana_clap_utils::keypair::DefaultSigner;
 use std::str::FromStr;
 use rand::rngs::OsRng;
-use anchor_client::{RequestNamespace, anchor_lang::AccountDeserialize, solana_client::rpc_client::RpcClient, solana_sdk::{
-    pubkey::Pubkey,
-    signature::{Keypair, Signer},
-    system_instruction, sysvar,
-}};
+use anchor_client::{RequestNamespace, anchor_lang::AccountDeserialize, solana_client::rpc_client::RpcClient, solana_sdk::{pubkey::Pubkey, signature::{Keypair, Signer}, system_instruction, sysvar, transaction::Transaction}};
 use solana_clap_utils::keypair::signer_from_path;
 
 pub fn new_multisig_config(matches: &clap::ArgMatches, config_file_path: String) -> Result<()> {
@@ -25,10 +21,12 @@ pub fn new_multisig_config(matches: &clap::ArgMatches, config_file_path: String)
         pda: "".to_string(),
         pda_nonce: 0,
         owners,
+        token_accounts: vec![],
     });
     config.save(&config_file_path, false)?;
     Ok(())
 }
+
 pub fn create_multisig(matches: &clap::ArgMatches, config_file_path: String, keypair: String) -> Result<()> {
     let mut config = Configuration::load(config_file_path.as_str(), false)?;
     let multisig_idx = config.multisig.multisig_index(matches.value_of("name").unwrap().to_string()).unwrap();
@@ -127,5 +125,45 @@ pub fn transfer_tokens(matches: &clap::ArgMatches, config_file_path: String, key
     } else {
         println!("sent proposal, account: {}", res.unwrap());
     }
+    Ok(())
+}
+
+pub fn create_token_account(matches: &clap::ArgMatches, config_file_path: String, keypair: String) -> Result<()> {
+    let mut config = Configuration::load(config_file_path.as_str(), false)?;
+    let rpc = config.rpc_client();
+    let mut wallet_manager = remote_wallet::maybe_wallet_manager().unwrap();
+    let signer = signer_from_path(matches, &keypair, &keypair, &mut wallet_manager).unwrap();
+    let token_name = matches.value_of("token-name").unwrap();
+    let token_mint = matches.value_of("token-mint").unwrap();
+    let multisig_name = matches.value_of("name").unwrap();
+    let multisig_config = config.multisig.by_name(multisig_name.to_string()).unwrap();
+    let multisig_idx = config.multisig.multisig_index(multisig_name.to_string()).unwrap();
+    let addr = spl_associated_token_account::get_associated_token_address(
+        &multisig_config.pda(),
+        &Pubkey::from_str(token_mint).unwrap(),
+    );
+
+    for (name, key) in config.multisig.accounts[multisig_idx].token_accounts.iter() {
+        if addr.to_string().eq(key) {
+            return Err(anyhow!("token account already exists"));
+        }
+    }
+
+    config.multisig.accounts[multisig_idx].token_accounts.push((token_name.to_string().clone(), addr.to_string().clone()));
+    config.save(&config_file_path, false);
+
+    let ix = spl_associated_token_account::create_associated_token_account(
+        &signer.pubkey(),
+        &multisig_config.pda(),
+        &Pubkey::from_str(token_mint).unwrap(),
+    );
+
+    let mut tx = Transaction::new_with_payer(&[ix], Some(&signer.pubkey()));
+    let (blockhash, _) = rpc.get_recent_blockhash().unwrap();
+    tx.sign(&vec![signer], blockhash);
+
+    let sig = rpc.send_and_confirm_transaction_with_spinner(&tx)?;
+    println!("sent tx {}", sig);
+
     Ok(())
 }

@@ -564,6 +564,7 @@ dependencies = [
  "simplelog",
  "solana-clap-utils",
  "solana-remote-wallet",
+ "spl-associated-token-account",
  "spl-token",
  "thiserror",
  "tokio",

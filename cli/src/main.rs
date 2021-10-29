@@ -76,6 +76,29 @@ async fn main() -> Result<()> {
                 .help("the name of the multisig account were creating")
                 .takes_value(true)
             ),
+            SubCommand::with_name("create-token-account")
+            .about("create an ata for the multisig saving in file")
+            .arg(
+                Arg::with_name("name")
+                .short("n")
+                .long("name")
+                .help("the name of the multisig ")
+                .takes_value(true)
+            )
+            .arg(
+                Arg::with_name("token-name")
+                .short("t")
+                .long("token-name")
+                .help("the name of the token")
+                .takes_value(true)
+            )
+            .arg(
+                Arg::with_name("token-mint")
+                .short("m")
+                .long("token-mint")
+                .help("the mint of  the token")
+                .takes_value(true)
+            ),
             SubCommand::with_name("transfer-tokens")
             .about("submit a token transfer tx to the multisig")
             .arg(
@@ -158,6 +181,9 @@ async fn process_matches<'a>(matches: &clap::ArgMatches<'a>, config_file_path: S
             }
             ("transfer-tokens", Some(transfer_tokens)) => {
                 multisig::transfer_tokens(transfer_tokens, config_file_path, keypair)
+            }
+            ("create-token-account",  Some(create)) => {
+                multisig::create_token_account(create, config_file_path, keypair)
             }
             _ => invalid_subcommand("multisig")
         }
