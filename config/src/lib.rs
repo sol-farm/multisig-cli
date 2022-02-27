@@ -1,14 +1,14 @@
+use anchor_client::{Client, Cluster};
 use anyhow::Result;
+use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use simplelog::*;
-use anchor_client::{Client, Cluster};
 use solana_client::rpc_client::RpcClient;
-use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::{Keypair, read_keypair_file};
-use std::{fs::File};
-use std::{fs};
-use rand::rngs::OsRng;
 use solana_sdk::commitment_config::CommitmentConfig;
+use solana_sdk::pubkey::Pubkey;
+use solana_sdk::signature::{read_keypair_file, Keypair};
+use std::fs;
+use std::fs::File;
 use std::str::FromStr;
 /// main configuration object
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -60,7 +60,7 @@ impl MultiSignature {
     pub fn by_name(&self, name: String) -> Option<MultiSigAccount> {
         for account in self.accounts.iter() {
             if account.name.eq(&name) {
-                return Some(account.clone())
+                return Some(account.clone());
             }
         }
         None
@@ -69,13 +69,12 @@ impl MultiSignature {
     pub fn multisig_index(&self, name: String) -> Option<usize> {
         for (idx, account) in self.accounts.iter().enumerate() {
             if account.name.eq(&name) {
-                return Some(idx)
+                return Some(idx);
             }
         }
         None
     }
 }
-
 
 impl Configuration {
     pub fn new(path: &str, as_json: bool) -> Result<()> {
@@ -107,10 +106,7 @@ impl Configuration {
     pub fn get_client(&self) -> Client {
         // just generate a random keypair
         let keypair = Keypair::generate(&mut OsRng);
-        let cluster = Cluster::Custom(
-            self.rpc_url.clone(),
-            self.ws_url.clone(),
-        );
+        let cluster = Cluster::Custom(self.rpc_url.clone(), self.ws_url.clone());
         Client::new_with_options(cluster, keypair, CommitmentConfig::confirmed())
     }
     pub fn payer(&self) -> Keypair {
@@ -193,10 +189,10 @@ impl Default for Configuration {
             log_file: "template.log".to_string(),
             debug_log: false,
             rpc_url: "https://solana-api.projectserum.com".to_string(),
-            multisig: MultiSignature{
+            multisig: MultiSignature {
                 program_id: "msigmtwzgXJHj2ext4XJjCDmpbcMuufFb5cHuwg6Xdt".to_string(),
                 accounts: vec![],
-            }
+            },
         }
     }
 }

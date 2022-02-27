@@ -22,9 +22,9 @@ use anchor_client::Client;
 use anchor_client::ClientError;
 use anchor_client::Program;
 use anchor_client::RequestNamespace;
-use serum_multisig::TransactionAccount;
 use anyhow::Result;
 use rand::rngs::OsRng;
+use serum_multisig::TransactionAccount;
 /// `RequestBuilder` provides a builder interface to create and send
 /// transactions to a cluster.
 pub struct RequestBuilder<'a> {
@@ -238,12 +238,12 @@ impl<'a> RequestBuilder<'a> {
         data: Vec<u8>,
     ) -> Result<Pubkey> {
         let tx_acct = Keypair::generate(&mut OsRng);
-        let mut builder = self.request()
+        let mut builder = self
+            .request()
             .instruction(system_instruction::create_account(
                 &&self.payer.pubkey(),
                 &tx_acct.pubkey(),
-                self.rpc
-                    .get_minimum_balance_for_rent_exemption(500)?,
+                self.rpc.get_minimum_balance_for_rent_exemption(500)?,
                 500,
                 &self.program_id,
             ))

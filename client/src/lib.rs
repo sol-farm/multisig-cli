@@ -1,6 +1,7 @@
 pub mod request_builder;
 use anyhow::Result;
 
+use crate::request_builder::RequestBuilder;
 use anchor_client::anchor_lang;
 use anchor_client::anchor_lang::InstructionData;
 use anchor_client::anchor_lang::ToAccountMetas;
@@ -23,7 +24,6 @@ use anchor_client::Client;
 use anchor_client::ClientError;
 use anchor_client::Program;
 use anchor_client::RequestNamespace;
-use crate::request_builder::RequestBuilder;
 use serum_multisig::TransactionAccount;
 use std::sync::Arc;
 impl<'a> RequestBuilder<'a> {
@@ -68,7 +68,6 @@ impl<'a> RequestBuilder<'a> {
         )
     }
 }
-
 
 #[cfg(test)]
 mod tests {

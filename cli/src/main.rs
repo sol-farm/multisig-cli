@@ -1,8 +1,8 @@
 #[global_allocator]
 static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
-use anyhow::{Result, anyhow};
-use tokio;
+use anyhow::{anyhow, Result};
 use clap::{App, Arg, SubCommand};
+use tokio;
 mod config;
 mod multisig;
 
@@ -120,7 +120,7 @@ async fn main() -> Result<()> {
                 Arg::with_name("target")
                 .short("t")
                 .long("target")
-                .help("the target to transfer tokens to, this must be a wallet address")
+                .help("the target to transfer tokens to (must be a token account)")
                 .takes_value(true)
                 .value_name("ADDRESS")
             )
@@ -158,12 +158,17 @@ fn get_config_or_default(matches: &clap::ArgMatches) -> String {
 }
 
 fn get_keypair_or_default(matches: &clap::ArgMatches) -> String {
-    matches.value_of("keypair")
-    .unwrap_or("usb://ledger")
-    .to_string()
+    matches
+        .value_of("keypair")
+        .unwrap_or("usb://ledger")
+        .to_string()
 }
 
-async fn process_matches<'a>(matches: &clap::ArgMatches<'a>, config_file_path: String, keypair: String) -> Result<()> {
+async fn process_matches<'a>(
+    matches: &clap::ArgMatches<'a>,
+    config_file_path: String,
+    keypair: String,
+) -> Result<()> {
     match matches.subcommand() {
         ("config", Some(config_command)) => match config_command.subcommand() {
             ("new", Some(new_config)) => config::new_config(new_config, config_file_path),
@@ -175,18 +180,18 @@ async fn process_matches<'a>(matches: &clap::ArgMatches<'a>, config_file_path: S
         ("multisig", Some(multisig_command)) => match multisig_command.subcommand() {
             ("new-config", Some(new_multisig)) => {
                 multisig::new_multisig_config(new_multisig, config_file_path)
-            },
+            }
             ("create", Some(create_command)) => {
                 multisig::create_multisig(create_command, config_file_path, keypair)
             }
             ("transfer-tokens", Some(transfer_tokens)) => {
                 multisig::transfer_tokens(transfer_tokens, config_file_path, keypair)
             }
-            ("create-token-account",  Some(create)) => {
+            ("create-token-account", Some(create)) => {
                 multisig::create_token_account(create, config_file_path, keypair)
             }
-            _ => invalid_subcommand("multisig")
-        }
+            _ => invalid_subcommand("multisig"),
+        },
         _ => invalid_command(),
     }
 }
