@@ -44,6 +44,32 @@ async fn main() -> Result<()> {
         SubCommand::with_name("multisig")
         .about("multisig management commands")
         .subcommands(vec![
+            SubCommand::with_name("new-auth")
+            .arg(
+                Arg::with_name("buffer")
+                .long("buffer")
+                .help("used to name the multisig account in the config file")
+                .takes_value(true)
+            )
+            .arg(
+                Arg::with_name("name")
+                .short("n")
+                .long("name")
+                .help("used to name the multisig account in the config file")
+                .takes_value(true)
+            )
+            .arg(
+                Arg::with_name("current-auth")
+                .long("current-auth")
+                .help("current authority")
+                .takes_value(true)
+            )
+            .arg(
+                Arg::with_name("new-auth")
+                .long("new-auth")
+                .help("new authority")
+                .takes_value(true)
+            ),
             SubCommand::with_name("new-config")
             .about("generates a new multisig config file with the given threshold, and owners")
             .arg(
@@ -178,6 +204,9 @@ async fn process_matches<'a>(
             _ => invalid_subcommand("config"),
         },
         ("multisig", Some(multisig_command)) => match multisig_command.subcommand() {
+            ("new-auth", Some(new_auth)) => {
+                multisig::set_auth(new_auth, config_file_path, keypair)
+            }
             ("new-config", Some(new_multisig)) => {
                 multisig::new_multisig_config(new_multisig, config_file_path)
             }

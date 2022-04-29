@@ -158,6 +158,42 @@ pub fn transfer_tokens(
     Ok(())
 }
 
+pub fn set_auth(
+    matches: &clap::ArgMatches,
+    config_file_path: String,
+    keypair: String,
+) -> Result<()> {
+    let config = Configuration::load(config_file_path.as_str(), false)?;
+    let mut wallet_manager = remote_wallet::maybe_wallet_manager().unwrap();
+    let signer = signer_from_path(matches, &keypair, &keypair, &mut wallet_manager);
+    if signer.is_err() {
+        panic!("failed to get signer {:#?}", signer.err().unwrap());
+    }
+    let signer = signer.unwrap();
+    println!("signer {}", signer.pubkey());
+    let multisig_name = matches.value_of("name").unwrap();
+    let multisig_config = config.multisig.by_name(multisig_name.to_string()).unwrap();
+    let builder = client::request_builder::RequestBuilder::from(
+        config.multisig.program_id(),
+        config.rpc_url.as_str(),
+        &*signer,
+        None,
+        RequestNamespace::Global,
+    );
+    match builder.propose_change_auth(
+        &multisig_config.account(),
+        &Pubkey::from_str(
+            matches.value_of("buffer").unwrap()
+        ).unwrap(),
+        &Pubkey::from_str(matches.value_of("new-auth").unwrap()).unwrap(),
+        &Pubkey::from_str(matches.value_of("current-auth").unwrap()).unwrap(),
+    ) {
+        Ok(sig) => println!("sent tx {}", sig),
+        Err(err) => println!("failed to change auth {:#?}", err),
+    }
+    Ok(())
+}
+
 pub fn create_token_account(
     matches: &clap::ArgMatches,
     config_file_path: String,

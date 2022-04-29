@@ -67,6 +67,22 @@ impl<'a> RequestBuilder<'a> {
             instruction.data,
         )
     }
+    pub fn propose_change_auth(
+        &self,
+        multisig: &Pubkey,
+        buffer: &Pubkey,
+        new_auth: &Pubkey,
+        current_auth: &Pubkey,
+    ) -> Result<Pubkey> {
+        self.propose_solana_instruction(
+            multisig,
+            anchor_lang::solana_program::bpf_loader_upgradeable::set_buffer_authority(
+                buffer, 
+            current_auth, 
+            new_auth
+            ),
+        )
+    }
 }
 
 #[cfg(test)]
