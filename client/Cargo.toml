@@ -11,3 +11,5 @@ anyhow = "1.0.44"
 spl-token = "3.2.0"
 serum-multisig = {git = "https://github.com/project-serum/multisig.git", rev = "9200c42ef388b1d266a9a4b0032554bc341a1fa2"}
 rand = "0.7.3"
+base64 = "0.13"
+bincode = "1"

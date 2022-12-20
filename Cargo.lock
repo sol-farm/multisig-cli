@@ -576,6 +576,8 @@ version = "0.1.0"
 dependencies = [
  "anchor-client",
  "anyhow",
+ "base64 0.13.0",
+ "bincode",
  "rand 0.7.3",
  "serum-multisig",
  "spl-token",

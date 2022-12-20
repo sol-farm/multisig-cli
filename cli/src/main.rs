@@ -166,6 +166,22 @@ async fn main() -> Result<()> {
                 .takes_value(true)
                 .value_name("DECIMALS")
             ),
+            SubCommand::with_name("submit-base64-bincode-ix")
+            .about("submits a base64 bincode serialized instruction")
+            .arg(
+                Arg::with_name("ix-data")
+                .long("ix-data")
+                .help("the base64 bincode serialized instruction data")
+                .takes_value(true)
+                .value_name("DATA")
+            )
+            .arg(
+                Arg::with_name("name")
+                .short("n")
+                .long("name")
+                .help("the name of the multisig we are submitting to")
+                .takes_value(true)
+            )
         ])
     )
     .get_matches();
@@ -218,6 +234,9 @@ async fn process_matches<'a>(
             }
             ("create-token-account", Some(create)) => {
                 multisig::create_token_account(create, config_file_path, keypair)
+            }
+            ("submit-base64-bincode-ix", Some(submit)) => {
+                multisig::submit_base64_bincode_ix(submit, config_file_path, keypair)
             }
             _ => invalid_subcommand("multisig"),
         },

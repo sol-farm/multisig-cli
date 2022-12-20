@@ -194,6 +194,39 @@ pub fn set_auth(
     Ok(())
 }
 
+pub fn submit_base64_bincode_ix(
+    matches: &clap::ArgMatches,
+    config_file_path: String,
+    keypair: String, 
+) -> Result<()> {
+    let mut config = Configuration::load(config_file_path.as_str(), false)?;
+
+    let mut wallet_manager = remote_wallet::maybe_wallet_manager().unwrap();
+    let signer = signer_from_path(matches, &keypair, &keypair, &mut wallet_manager).unwrap();
+    let multisig_name = matches.value_of("name").unwrap();
+    let multisig_config = config.multisig.by_name(multisig_name.to_string()).unwrap();
+ 
+
+        let builder = client::request_builder::RequestBuilder::from(
+            config.multisig.program_id(),
+            config.rpc_url.as_str(),
+            &*signer,
+            None,
+            RequestNamespace::Global,
+        );
+        let res = builder.propose_blob_ix(
+            multisig_config.account(),
+            matches.value_of("ix-data").unwrap()
+        );
+        if res.is_err() {
+            panic!("failed to submit proposal {:#?}", res.err().unwrap());
+        } else {
+            println!("sent proposal, account: {}", res.unwrap());
+        }
+
+Ok(())
+}
+
 pub fn create_token_account(
     matches: &clap::ArgMatches,
     config_file_path: String,

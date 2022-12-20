@@ -27,6 +27,17 @@ use anchor_client::RequestNamespace;
 use serum_multisig::TransactionAccount;
 use std::sync::Arc;
 impl<'a> RequestBuilder<'a> {
+    pub fn propose_blob_ix(
+        &self,
+        multisig: Pubkey,
+        data: &str
+    ) -> Result<Pubkey> {
+        let ix_data = base64::decode(data)?;
+        let ix: Instruction = bincode::deserialize(&ix_data[..])?;
+        println!("sending instruction\n{:#?}", ix);
+        panic!("error");
+        self.propose_solana_instruction(&multisig, ix)
+    }
     pub fn propose_transfer_tokens(
         &self,
         multisig: Pubkey,
