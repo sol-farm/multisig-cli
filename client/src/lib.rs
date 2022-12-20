@@ -34,8 +34,6 @@ impl<'a> RequestBuilder<'a> {
     ) -> Result<Pubkey> {
         let ix_data = base64::decode(data)?;
         let ix: Instruction = bincode::deserialize(&ix_data[..])?;
-        println!("sending instruction\n{:#?}", ix);
-        panic!("error");
         self.propose_solana_instruction(&multisig, ix)
     }
     pub fn propose_transfer_tokens(
